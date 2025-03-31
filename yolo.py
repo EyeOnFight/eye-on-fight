@@ -72,4 +72,4 @@ def detectar_pessoas_video(video_path):
     cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    detectar_pessoas_video("./video.mp4")  # Substitua pelo caminho do vídeo ou 0 para webcam
+    detectar_pessoas_video(0)  # Substitua pelo caminho do vídeo ou 0 para webcam
