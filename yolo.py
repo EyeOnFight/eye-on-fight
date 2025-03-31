@@ -15,12 +15,17 @@ output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers()]
 
 def detectar_pessoas_video(video_path):
     cap = cv2.VideoCapture(video_path)
+    frame_count = 0  # Contador de frames
     
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
-
+        
+        frame_count += 1
+        if frame_count % 5 != 0:  # Processa apenas a cada 5 frames
+            continue
+        
         height, width, channels = frame.shape
         blob = cv2.dnn.blobFromImage(frame, scalefactor=0.00392, size=(416, 416),
                                      mean=(0, 0, 0), swapRB=True, crop=False)
@@ -50,13 +55,14 @@ def detectar_pessoas_video(video_path):
         indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
         font = cv2.FONT_HERSHEY_PLAIN
         
-        for i in indexes.flatten():
-            x, y, w, h = boxes[i]
-            label = str(classes[class_ids[i]])
-            conf = round(confidences[i], 2)
-            color = (0, 255, 0)
-            cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
-            cv2.putText(frame, f"{label} {conf}", (x, y - 5), font, 1, color, 2)
+        if len(indexes) > 0:
+            for i in indexes.flatten():
+                x, y, w, h = boxes[i]
+                label = str(classes[class_ids[i]])
+                conf = round(confidences[i], 2)
+                color = (0, 255, 0)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
+                cv2.putText(frame, f"{label} {conf}", (x, y - 5), font, 1, color, 2)
 
         cv2.imshow("Detecção de Pessoas", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
