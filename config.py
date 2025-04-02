@@ -2,7 +2,7 @@
 # Configurações centralizadas para o projeto de visão computacional de detecção de luta
 
 # Caminho para o modelo YOLO Pose
-YOLO_POSE_MODEL_PATH = "yolov8n-pose.pt"  # Ajuste conforme o seu ambiente
+YOLO_POSE_MODEL_PATH = "yolov8l-pose.pt"  # Ajuste conforme o seu ambiente
 
 # Configurações de pré-processamento e vídeo
 VIDEO_FRAME_RATE = 30  # Taxa de quadros a ser utilizada (pode ser alterada)
