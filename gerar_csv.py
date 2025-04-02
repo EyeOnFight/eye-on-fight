@@ -3,8 +3,10 @@ import cv2
 import csv
 from ultralytics import YOLO
 
+from config import YOLO_POSE_MODEL_PATH
+
 # Carrega o modelo YOLO Pose uma única vez (evitando recarregamentos repetidos)
-pose_model = YOLO("yolov8n-pose.pt")  # Certifique-se de ter esse modelo ou ajuste o caminho
+pose_model = YOLO(YOLO_POSE_MODEL_PATH)  # Certifique-se de ter esse modelo ou ajuste o caminho
 
 
 def read_annotations(txt_path):
