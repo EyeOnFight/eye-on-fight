@@ -1,32 +1,24 @@
-# Taxa de quadros desejada para o processamento (frames por segundo).
-VIDEO_FRAME_RATE = 30
+# config.py
+# Configurações centralizadas para o projeto de visão computacional de detecção de luta
 
-YOLO_POSE_MODEL_PATH = "yolov8n-pose.pt"
+# Caminho para o modelo YOLO Pose
+YOLO_POSE_MODEL_PATH = "yolov8n-pose.pt"  # Ajuste conforme o seu ambiente
 
-# Tipo de representação dos keypoints:
-# "absolute" para posições absolutas ou "relative" para posições relativas.
-KEYPOINTS_FEATURE_TYPE = "absolute"
+# Configurações de pré-processamento e vídeo
+VIDEO_FRAME_RATE = 30  # Taxa de quadros a ser utilizada (pode ser alterada)
 
-# Opções: "RNN", "GRU" ou "LSTM".
-RECURRENT_MODEL_TYPE = "GRU"
-
-# Número de timesteps (recorrências) que o modelo irá considerar.
-NUM_TIMESTEPS = 10  # Ajuste para avaliar diferentes quantidades de recurrences
-
-# Tamanho do estado escondido (hidden state) da RNN.
-HIDDEN_SIZE = 128  # Exemplo: 128; ajuste conforme necessário
-
-# ===============================
-# Configurações de Treinamento e Diretórios
-# ===============================
+# Configurações do treinamento
+TRAIN_CSV_DIR = "csv"  # Diretório onde os CSVs dos vídeos processados estão armazenados
+MODEL_TYPE = "LSTM"    # Escolha entre "RNN", "GRU" ou "LSTM"
+TIMESTEPS = 10         # Número de frames que compõem cada sequência temporal
+INPUT_SIZE = 34        # Número de features (17 keypoints * 2 coordenadas)
+HIDDEN_SIZE = 128      # Tamanho do estado oculto da rede recorrente
+NUM_LAYERS = 2         # Número de camadas recorrentes
+OUTPUT_SIZE = 1        # Saída para classificação binária (luta ou não)
 LEARNING_RATE = 0.001
+EPOCHS = 20
 BATCH_SIZE = 32
-NUM_EPOCHS = 50
+MODEL_SAVE_PATH = "models/fight_detector.pt"  # Caminho para salvar o modelo treinado
 
-# Diretórios de dados e salvamento de modelos
-DATASET_DIR = "dataset"
-CSV_DIR = "csv"
-MODEL_SAVE_PATH = "models/model.pth"
-
-THRESHOLD = 0.5  # Defina um threshold para considerar que há briga, por exemplo, 0.5
-VIDEO_PATH= "videos_teste/Fighting025_x264.mp4"  # Caminho para o vídeo de teste
+# Configurações de inferência
+DETECTION_THRESHOLD = 0.5  # Limiar para classificar como luta
