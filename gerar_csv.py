@@ -3,7 +3,7 @@ import cv2
 import csv
 from ultralytics import YOLO
 
-# Carrega o modelo YOLO Pose uma única vez (faça isso fora da função para evitar recarregamento repetido)
+# Carrega o modelo YOLO Pose uma única vez (evitando recarregamentos repetidos)
 pose_model = YOLO("yolov8n-pose.pt")  # Certifique-se de ter esse modelo ou ajuste o caminho
 
 
@@ -32,7 +32,7 @@ def read_annotations(txt_path):
             video_name = parts[0]
             event_name = parts[1]  # "Fighting" ou "Normal"
 
-            # Convertemos as próximas 4 colunas em inteiros
+            # Converte as próximas 4 colunas em inteiros
             start1, end1 = int(parts[2]), int(parts[3])
             start2, end2 = int(parts[4]), int(parts[5])
 
@@ -52,7 +52,7 @@ def read_annotations(txt_path):
 def is_frame_in_annotation(frame_number, intervals):
     """
     Retorna 1 se o 'frame_number' estiver em algum intervalo anotado;
-    caso contrário, 0.
+    caso contrário, retorna 0.
     """
     for (start, end) in intervals:
         if start <= frame_number <= end:
@@ -63,46 +63,49 @@ def is_frame_in_annotation(frame_number, intervals):
 def detect_keypoints(frame):
     """
     Utiliza o YOLO Pose para detectar keypoints.
-    Retorna uma lista com 34 valores: [x1, y1, x2, y2, ..., x17, y17].
-    Se nenhuma pessoa for detectada, retorna uma lista de zeros.
+    Retorna uma lista de detecções, onde cada detecção é uma lista com 34 valores:
+    [x1, y1, x2, y2, ..., x17, y17].
+    Se nenhuma pessoa for detectada, retorna uma lista contendo uma única detecção com 34 zeros.
     """
     # Converte o frame de BGR para RGB
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    # Executa a inferência com o modelo YOLO Pose (certifique-se de que 'pose_model' está definido)
+    # Executa a inferência com o modelo YOLO Pose
     results = pose_model(frame_rgb, verbose=False)
 
+    all_detections = []
     if results and len(results) > 0:
         detected = results[0]
         if detected.keypoints is not None and len(detected.keypoints) > 0:
-            # Converte o tensor de keypoints para um array NumPy
-            kp_array = detected.keypoints[0].xy.cpu().numpy()
+            # Itera sobre todas as pessoas detectadas
+            for person in detected.keypoints:
+                # Converte o tensor de keypoints para um array NumPy
+                kp_array = person.xy.cpu().numpy()
 
-            # Debug: exibe a forma do array para verificar a estrutura
-            print("kp_array.shape:", kp_array.shape)
+                # Caso o array possua uma dimensão extra (ex.: (1, 17, 2)), removemos a primeira dimensão
+                if kp_array.shape[0] == 1:
+                    kp_array = kp_array[0]
 
-            # Se a forma for (1, 17, 2), removemos a dimensão extra
-            if kp_array.shape[0] == 1:
-                kp_array = kp_array[0]
+                coords = []
+                # Agora, assumindo que kp_array tem a forma (17, 2)
+                for point in kp_array:
+                    coords.extend([float(point[0]), float(point[1])])
+                # Se não houver 17 pontos, completa com zeros
+                if len(coords) < 34:
+                    coords.extend([0] * (34 - len(coords)))
+                all_detections.append(coords)
 
-            coords = []
-            # Agora kp_array deve ter a forma (17, 2)
-            for point in kp_array:
-                coords.extend([float(point[0]), float(point[1])])
+    # Se nenhuma pessoa for detectada, retorna uma única "detecção" com zeros
+    if not all_detections:
+        return [[0] * 34]
 
-            # Se não tiver 17 pontos, completa com zeros
-            if len(coords) < 34:
-                coords.extend([0] * (34 - len(coords)))
-            return coords
-
-    # Se não detectar nenhuma pessoa, retorna 34 zeros
-    return [0] * 34
+    return all_detections
 
 
 def process_video(video_path, event_name, intervals, output_csv_path):
     """
-    Abre o vídeo, lê cada frame, detecta keypoints e salva no CSV:
-    frame, x1, y1, x2, y2, ..., x17, y17, label
+    Abre o vídeo, lê cada frame, detecta keypoints de todas as pessoas e salva no CSV:
+    frame, person_id, x1, y1, x2, y2, ..., x17, y17, label
     """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -114,7 +117,7 @@ def process_video(video_path, event_name, intervals, output_csv_path):
         writer = csv.writer(csvfile)
 
         # Monta o cabeçalho do CSV
-        header = ["frame"]
+        header = ["frame", "person_id"]
         for i in range(1, 18):
             header.append(f"x{i}")
             header.append(f"y{i}")
@@ -128,8 +131,8 @@ def process_video(video_path, event_name, intervals, output_csv_path):
                 break
             frame_count += 1
 
-            # Detecta keypoints usando YOLO Pose
-            keypoints = detect_keypoints(frame)
+            # Detecta keypoints usando YOLO Pose para todas as pessoas
+            detections = detect_keypoints(frame)
 
             # Define o label: se for "Fighting" e o frame estiver no intervalo anotado, label = 1; caso contrário, 0.
             if event_name == "Fighting":
@@ -137,15 +140,17 @@ def process_video(video_path, event_name, intervals, output_csv_path):
             else:
                 label = 0
 
-            row = [frame_count] + keypoints + [label]
-            writer.writerow(row)
+            # Salva uma linha para cada pessoa detectada
+            for person_id, keypoints in enumerate(detections):
+                row = [frame_count, person_id] + keypoints + [label]
+                writer.writerow(row)
 
     cap.release()
     print(f"[INFO] Processado: {video_path} -> {output_csv_path} (Frames: {frame_count})")
 
 
 def main():
-    # Ajuste os caminhos conforme a sua estrutura
+    # Ajuste os caminhos conforme sua estrutura de diretórios
     annotations_file = os.path.join("annotations", "temporal_annotation.txt")
     dataset_dir = os.path.join("dataset")
     csv_output_dir = os.path.join("csv")
