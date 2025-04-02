@@ -73,6 +73,9 @@ def process_video(video_path, event_name, intervals, output_csv_path):
     frame, x1, y1, x2, y2, ..., x17, y17, label
     """
     cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        print(f"[ERROR] Não foi possível abrir o vídeo: {video_path}")
+        return
     frame_count = 0
 
     with open(output_csv_path, 'w', newline='') as csvfile:
