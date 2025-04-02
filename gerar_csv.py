@@ -1,6 +1,10 @@
 import os
 import cv2
 import csv
+from ultralytics import YOLO
+
+# Carrega o modelo YOLO Pose uma única vez (faça isso fora da função para evitar recarregamento repetido)
+pose_model = YOLO("yolov8n-pose.pt")  # Certifique-se de ter esse modelo ou ajuste o caminho
 
 
 def read_annotations(txt_path):
@@ -58,13 +62,41 @@ def is_frame_in_annotation(frame_number, intervals):
 
 def detect_keypoints(frame):
     """
-    Função de placeholder para detecção de keypoints via YOLO Pose.
-    Neste exemplo, apenas retorna 34 zeros (17 pontos * (x, y)).
-    Integre aqui a chamada ao seu modelo YOLO Pose.
+    Utiliza o YOLO Pose para detectar keypoints.
+    Retorna uma lista com 34 valores: [x1, y1, x2, y2, ..., x17, y17].
+    Se nenhuma pessoa for detectada, retorna uma lista de zeros.
     """
-    # Exemplo: 17 keypoints => (x1,y1), (x2,y2), ..., (x17,y17)
-    keypoints = [0] * 34
-    return keypoints
+    # Converte o frame de BGR para RGB
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+    # Executa a inferência com o modelo YOLO Pose (certifique-se de que 'pose_model' está definido)
+    results = pose_model(frame_rgb, verbose=False)
+
+    if results and len(results) > 0:
+        detected = results[0]
+        if detected.keypoints is not None and len(detected.keypoints) > 0:
+            # Converte o tensor de keypoints para um array NumPy
+            kp_array = detected.keypoints[0].xy.cpu().numpy()
+
+            # Debug: exibe a forma do array para verificar a estrutura
+            print("kp_array.shape:", kp_array.shape)
+
+            # Se a forma for (1, 17, 2), removemos a dimensão extra
+            if kp_array.shape[0] == 1:
+                kp_array = kp_array[0]
+
+            coords = []
+            # Agora kp_array deve ter a forma (17, 2)
+            for point in kp_array:
+                coords.extend([float(point[0]), float(point[1])])
+
+            # Se não tiver 17 pontos, completa com zeros
+            if len(coords) < 34:
+                coords.extend([0] * (34 - len(coords)))
+            return coords
+
+    # Se não detectar nenhuma pessoa, retorna 34 zeros
+    return [0] * 34
 
 
 def process_video(video_path, event_name, intervals, output_csv_path):
@@ -81,7 +113,7 @@ def process_video(video_path, event_name, intervals, output_csv_path):
     with open(output_csv_path, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
 
-        # Montar o cabeçalho
+        # Monta o cabeçalho do CSV
         header = ["frame"]
         for i in range(1, 18):
             header.append(f"x{i}")
@@ -89,25 +121,22 @@ def process_video(video_path, event_name, intervals, output_csv_path):
         header.append("label")
         writer.writerow(header)
 
-        # Loop sobre frames
+        # Processa cada frame
         while True:
             ret, frame = cap.read()
             if not ret:
                 break
             frame_count += 1
 
-            # Detectar keypoints (aqui, fictício)
+            # Detecta keypoints usando YOLO Pose
             keypoints = detect_keypoints(frame)
 
-            # Definir label = 1 se for Fighting e o frame estiver no intervalo
-            # Caso contrário, label = 0
+            # Define o label: se for "Fighting" e o frame estiver no intervalo anotado, label = 1; caso contrário, 0.
             if event_name == "Fighting":
                 label = is_frame_in_annotation(frame_count, intervals)
             else:
-                # Vídeo "Normal": todos os frames são 0
                 label = 0
 
-            # Montar a linha do CSV
             row = [frame_count] + keypoints + [label]
             writer.writerow(row)
 
@@ -126,9 +155,9 @@ def main():
     # Lê as anotações
     annotations = read_annotations(annotations_file)
 
-    # Para cada vídeo anotado, processar e gerar o CSV
+    # Para cada vídeo anotado, processa e gera o CSV correspondente
     for video_name, info in annotations.items():
-        event_name = info["event"]  # Fighting ou Normal
+        event_name = info["event"]  # "Fighting" ou "Normal"
         intervals = info["intervals"]  # [(start1, end1), (start2, end2)]
 
         video_path = os.path.join(dataset_dir, video_name)

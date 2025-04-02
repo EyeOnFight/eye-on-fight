@@ -1,6 +1,6 @@
 Fighting003_x264.mp4  Fighting  1820  3103  -1  -1  
 Fighting018_x264.mp4  Fighting  80  420  -1  -1  
-Fighting033_x264.mp4  Fighting  570  840  -1  -1  
+Fighting033_x264.mp4  Fighting  570  840  -1  -1
 Fighting042_x264.mp4  Fighting  290  1200  -1  -1  
 Fighting047_x264.mp4  Fighting  200  1830  -1  -1
 Normal_Videos_015_x264.mp4  Normal  -1  -1  -1  -1
