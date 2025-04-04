@@ -6,10 +6,10 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
 
 # Carregar os dados
-X_train = np.load("../data/datasets/X_train.npy", allow_pickle=True)
-y_train = np.load("../data/datasets/y_train.npy")
-X_val = np.load("../data/datasets/X_val.npy", allow_pickle=True)
-y_val = np.load("../data/datasets/y_val.npy")
+X_train = np.load("data/datasets/X_train.npy", allow_pickle=True)
+y_train = np.load("data/datasets/y_train.npy")
+X_val = np.load("data/datasets/X_val.npy", allow_pickle=True)
+y_val = np.load("data/datasets/y_val.npy")
 
 # Descobrir o maior número de timesteps e preencher os menores com zeros
 max_timesteps = max([x.shape[0] for x in X_train])
@@ -38,7 +38,7 @@ y_val_cat = to_categorical(y_val, num_classes=2)
 model = Sequential([
     Masking(mask_value=0.0, input_shape=(max_timesteps, num_features)),
     GRU(64, return_sequences=True),
-    Dropout(0.3),
+    Dropout(0.3),b # trocar para 0.5 se o val_loss não baixar muito
     GRU(32),
     Dropout(0.3),
     Dense(16, activation='relu'),
@@ -46,11 +46,11 @@ model = Sequential([
 ])
 
 # Compilar o modelo
-model.compile(optimizer=Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
+model.compile(optimizer=Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy']) # colocar 0.0005 se o val_loss não baixar
 
 # Treinar o modelo
 epochs = 20
-batch_size = 8
+batch_size = 32
 history = model.fit(
     X_train_padded, y_train_cat,
     validation_data=(X_val_padded, y_val_cat),
