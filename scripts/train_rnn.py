@@ -29,9 +29,11 @@ y_val_cat = to_categorical(y_val, num_classes=2)
 # Criar o modelo GRU
 model = Sequential([
     Masking(mask_value=0.0, input_shape=(max_timesteps, num_features)),
-    GRU(32, return_sequences=False),  
-    Dropout(0.4),  
-    Dense(16, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.01)),  
+    GRU(64, return_sequences=True),  
+    Dropout(0.3),  
+    GRU(32),  
+    Dropout(0.3),  
+    Dense(16, activation='relu'),  
     Dense(2, activation='softmax')
 ])
 
@@ -39,8 +41,8 @@ model = Sequential([
 model.compile(optimizer=Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
 
 # Treinar o modelo
-epochs = 40
-batch_size = 12
+epochs = 20
+batch_size = 10
 history = model.fit(
     X_train, y_train_cat,
     validation_data=(X_val, y_val_cat),
