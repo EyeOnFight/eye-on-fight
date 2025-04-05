@@ -7,7 +7,7 @@ from tensorflow.keras.models import load_model
 # Parâmetros
 # ----------------------------
 MAX_TIMESTEPS = 31642
-NUM_FEATURES = 238  # Adaptado para o modelo treinado
+NUM_FEATURES = 204  # Adaptado para o modelo treinado
 
 # ----------------------------
 # Função para extrair keypoints com MediaPipe Pose
@@ -62,8 +62,8 @@ def pad_sequence(data, max_timesteps, num_features):
 # ----------------------------
 # Caminhos
 # ----------------------------
-video_path = "dataset/Normal_Videos_015_x264.mp4"
-model_path = "models/past_models/rnn_fight_detection.h5"
+video_path = "dataset/radiohead-on-shuffle-be-like.mp4"
+model_path = "models/rnn_fight_detection_optimized.keras"
 
 # ----------------------------
 # Início da inferência
