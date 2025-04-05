@@ -1,7 +1,7 @@
 import os
-import random
-from pytubefix import YouTube
 import streamlit as st
+from pytubefix import YouTube
+from model_bridge import predict_fight  # Importa a função de predição
 
 st.set_page_config(page_title="📹 Monitoramento de Segurança - Detecção de Lutas", layout="centered")
 
@@ -28,7 +28,6 @@ st.markdown('<div class="big-title">🎥 Sistema de Detecção de Lutas</div>', 
 st.markdown('<div class="subtext">Análise automática de vídeos de segurança para identificar comportamentos violentos.</div><br>', unsafe_allow_html=True)
 
 video_url = st.text_input("📎 Cole o link de um vídeo de segurança (YouTube ou teste local)")
-
 output_path = "."
 
 def baixar_video(link):
@@ -46,19 +45,15 @@ def baixar_video(link):
         if stream:
             stream.download(output_path=output_path, filename="youtube.mp4")
             st.success("✅ Vídeo baixado com sucesso!")
-
-            # Simulação de probabilidade (para testes visuais)
-            probabilidade = round(random.uniform(0, 1) * 100, 2)
-
-            # Exibir resultado de forma neutra
-            st.info(f"📊 Probabilidade estimada de ocorrência de comportamento agressivo: **{probabilidade}%**")
-
+            
+            # Utiliza a ponte para processar o vídeo e fazer a predição
+            probability = predict_fight(mp4_path)
+            st.info(f"📊 Probabilidade estimada de comportamento agressivo: **{probability:.2f}%**")
         else:
             st.error("❌ Nenhum stream compatível encontrado.")
 
     except Exception as e:
         st.error(f"❌ Erro ao processar o link: {str(e)}")
 
-# Ação ao colar link
 if video_url.strip():
     baixar_video(video_url)
