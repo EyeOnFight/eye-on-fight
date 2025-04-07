@@ -28,7 +28,7 @@ rnn_model = load_model(MODEL_PATH, custom_objects={'GRU': CustomGRU})
 def get_pose_model():
     from ultralytics import YOLO
     # O parâmetro 'verbose=False' tenta reduzir os logs do YOLO, se suportado.
-    return YOLO("yolov8n-pose.pt", verbose=False)
+    return YOLO("yolov8s-pose.pt", verbose=False)
 
 # ============================
 # Função para converter o vídeo (10 fps e resolução 640x480)

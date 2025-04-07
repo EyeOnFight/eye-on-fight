@@ -27,33 +27,42 @@ st.markdown(
 st.markdown('<div class="big-title">🎥 Sistema de Detecção de Lutas</div>', unsafe_allow_html=True)
 st.markdown('<div class="subtext">Análise automática de vídeos de segurança para identificar comportamentos violentos.</div><br>', unsafe_allow_html=True)
 
-video_url = st.text_input("📎 Cole o link de um vídeo de segurança (YouTube ou teste local)")
-output_path = "."
+# Seleção do modo de entrada: Link do YouTube ou Upload de vídeo local
+video_mode = st.radio("Selecione a fonte do vídeo:", ("Link do YouTube", "Upload de vídeo local"))
 
-def baixar_video(link):
-    try:
-        yt = YouTube(link)
-        st.markdown("### 🎞️ Pré-visualização do vídeo original")
-        st.video(link)
-        st.write(f"🎬 Baixando: **{yt.title}**")
+if video_mode == "Link do YouTube":
+    video_url = st.text_input("📎 Cole o link de um vídeo de segurança (YouTube)")
+    if video_url.strip():
+        try:
+            yt = YouTube(video_url)
+            st.markdown("### 🎞️ Pré-visualização do vídeo original")
+            st.video(video_url)
+            st.write(f"🎬 Baixando: **{yt.title}**")
+            mp4_path = os.path.join(".", "youtube.mp4")
+            if os.path.exists(mp4_path):
+                os.remove(mp4_path)
+            stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
+            if stream:
+                stream.download(output_path=".", filename="youtube.mp4")
+                st.success("✅ Vídeo baixado com sucesso!")
+                probability = predict_fight(mp4_path)
+                st.info(f"📊 Probabilidade estimada de comportamento agressivo: **{probability:.2f}%**")
+            else:
+                st.error("❌ Nenhum stream compatível encontrado.")
+        except Exception as e:
+            st.error(f"❌ Erro ao processar o link: {str(e)}")
 
-        mp4_path = os.path.join(output_path, "youtube.mp4")
-        if os.path.exists(mp4_path):
-            os.remove(mp4_path)
-
-        stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
-        if stream:
-            stream.download(output_path=output_path, filename="youtube.mp4")
-            st.success("✅ Vídeo baixado com sucesso!")
-            
-            # Utiliza a ponte para processar o vídeo e fazer a predição
-            probability = predict_fight(mp4_path)
+elif video_mode == "Upload de vídeo local":
+    uploaded_video = st.file_uploader("Selecione um arquivo de vídeo", type=["mp4", "mov", "avi"])
+    if uploaded_video is not None:
+        # Salva o arquivo enviado em um caminho temporário
+        temp_video_path = os.path.join(".", "temp_uploaded_video.mp4")
+        with open(temp_video_path, "wb") as f:
+            f.write(uploaded_video.read())
+        st.video(temp_video_path)
+        st.success("✅ Vídeo carregado com sucesso!")
+        try:
+            probability = predict_fight(temp_video_path)
             st.info(f"📊 Probabilidade estimada de comportamento agressivo: **{probability:.2f}%**")
-        else:
-            st.error("❌ Nenhum stream compatível encontrado.")
-
-    except Exception as e:
-        st.error(f"❌ Erro ao processar o link: {str(e)}")
-
-if video_url.strip():
-    baixar_video(video_url)
+        except Exception as e:
+            st.error(f"❌ Erro ao processar o vídeo: {str(e)}")
